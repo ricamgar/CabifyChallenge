@@ -1,10 +1,11 @@
 package com.ricamgar.challenge.presentation.main;
 
-import android.location.Location;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
+import android.util.Log;
 import android.widget.AutoCompleteTextView;
+import android.widget.Toast;
 
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.maps.CameraUpdateFactory;
@@ -12,9 +13,18 @@ import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.LatLngBounds;
+import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
+import com.google.android.gms.maps.model.Polyline;
+import com.google.android.gms.maps.model.PolylineOptions;
 import com.ricamgar.challenge.R;
+import com.ricamgar.challenge.domain.model.Estimate;
+import com.ricamgar.challenge.domain.model.Location;
 import com.ricamgar.challenge.presentation.main.adapter.PlaceAutocompleteAdapter;
+import com.ricamgar.challenge.presentation.main.presenter.MainPresenter;
+
+import java.util.List;
 
 import javax.inject.Inject;
 
@@ -22,7 +32,7 @@ import butterknife.BindView;
 import butterknife.ButterKnife;
 
 public class MainActivity extends AppCompatActivity implements OnMapReadyCallback,
-        MapPresenter.MapView {
+        MainPresenter.MapView {
 
     private static final String TAG = MainActivity.class.getSimpleName();
 
@@ -34,10 +44,13 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     @Inject
     GoogleApiClient googleApiClient;
     @Inject
-    MapPresenter presenter;
+    MainPresenter presenter;
 
     private GoogleMap map;
     private PlaceAutocompleteAdapter adapter;
+    private Marker originMarker;
+    private Marker destinationMarker;
+    private Polyline lineBetweenMarkers;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -99,13 +112,10 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         map = googleMap;
         map.setMyLocationEnabled(true);
         // TODO: 21/12/16 Use the FusedLocationApi
-        map.setOnMyLocationChangeListener(new GoogleMap.OnMyLocationChangeListener() {
-            @Override
-            public void onMyLocationChange(Location location) {
-                LatLng latLng = new LatLng(location.getLatitude(), location.getLongitude());
-                map.addMarker(new MarkerOptions().position(latLng));
-                map.moveCamera(CameraUpdateFactory.newLatLngZoom(latLng, 17.0f));
-            }
+        map.setOnMyLocationChangeListener(location -> {
+            LatLng latLng = new LatLng(location.getLatitude(), location.getLongitude());
+            map.addMarker(new MarkerOptions().position(latLng));
+            map.moveCamera(CameraUpdateFactory.newLatLngZoom(latLng, 17.0f));
         });
     }
 
@@ -146,15 +156,58 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
 //    }
 
     @Override
-    public void addOriginMarker(LatLng latLng) {
-        map.addMarker(new MarkerOptions().position(latLng));
-        map.moveCamera(CameraUpdateFactory.newLatLngZoom(latLng, 17.0f));
+    public void addOriginMarker(Location location) {
+        removeMarkerIfNeeded(originMarker);
+        originMarker = drawNewMarker(location);
+        drawLineBetweenMarkers();
     }
 
     @Override
-    public void addDestinationMarker(LatLng latLng) {
-        map.addMarker(new MarkerOptions().position(latLng));
+    public void addDestinationMarker(Location location) {
+        removeMarkerIfNeeded(destinationMarker);
+        destinationMarker = drawNewMarker(location);
+        drawLineBetweenMarkers();
+    }
+
+    @Override
+    public void showError(String errorMessage) {
+        Toast.makeText(this, errorMessage, Toast.LENGTH_SHORT).show();
+        Log.e(TAG, errorMessage);
+    }
+
+    @Override
+    public void showEstimates(List<Estimate> estimates) {
+        Toast.makeText(this, "Estimates: " + estimates.size(), Toast.LENGTH_SHORT).show();
+    }
+
+    private void removeMarkerIfNeeded(Marker marker) {
+        if (marker != null) {
+            marker.remove();
+        }
+    }
+
+    private Marker drawNewMarker(Location location) {
+        LatLng latLng = new LatLng(location.latitude, location.longitude);
         map.moveCamera(CameraUpdateFactory.newLatLngZoom(latLng, 17.0f));
+        return map.addMarker(new MarkerOptions().position(latLng));
+    }
+
+    private void drawLineBetweenMarkers() {
+        if (originMarker != null && destinationMarker != null) {
+            PolylineOptions polylineOptions = new PolylineOptions();
+            polylineOptions.add(originMarker.getPosition(), destinationMarker.getPosition());
+            if (lineBetweenMarkers != null) {
+                lineBetweenMarkers.remove();
+            }
+            lineBetweenMarkers = map.addPolyline(polylineOptions);
+            LatLngBounds latLngBounds = LatLngBounds.builder()
+                    .include(originMarker.getPosition())
+                    .include(destinationMarker.getPosition())
+                    .build();
+            map.animateCamera(CameraUpdateFactory.newLatLngBounds(
+                    latLngBounds,
+                    20));
+        }
     }
 
 //    private static Spanned formatPlaceDetails(Resources res, CharSequence name, String id,
