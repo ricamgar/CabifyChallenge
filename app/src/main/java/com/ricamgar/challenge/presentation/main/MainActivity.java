@@ -1,10 +1,15 @@
 package com.ricamgar.challenge.presentation.main;
 
 import android.os.Bundle;
+import android.support.design.widget.BottomSheetBehavior;
 import android.support.v7.app.AppCompatActivity;
+import android.support.v7.widget.GridLayoutManager;
+import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
+import android.view.View;
 import android.widget.AutoCompleteTextView;
+import android.widget.RelativeLayout;
 import android.widget.Toast;
 
 import com.google.android.gms.common.api.GoogleApiClient;
@@ -21,6 +26,7 @@ import com.google.android.gms.maps.model.PolylineOptions;
 import com.ricamgar.challenge.R;
 import com.ricamgar.challenge.domain.model.Estimate;
 import com.ricamgar.challenge.domain.model.Location;
+import com.ricamgar.challenge.presentation.main.adapter.EstimatesAdapter;
 import com.ricamgar.challenge.presentation.main.adapter.PlaceAutocompleteAdapter;
 import com.ricamgar.challenge.presentation.main.presenter.MainPresenter;
 
@@ -36,21 +42,36 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
 
     private static final String TAG = MainActivity.class.getSimpleName();
 
+    private static final LatLngBounds SEARCH_BOUNDS =
+            LatLngBounds.builder()
+                    .include(new LatLng(40.471831, -3.748727))
+                    .include(new LatLng(40.409516, -3.665643))
+                    .build();
+
     @BindView(R.id.autocomplete_origin_places)
     AutoCompleteTextView autoCompleteOrigin;
     @BindView(R.id.autocomplete_destination_places)
     AutoCompleteTextView autoCompleteDestination;
+    @BindView(R.id.estimates_bottow_sheet)
+    RelativeLayout estimatesBottomSheet;
+    @BindView(R.id.estimates_list)
+    RecyclerView estimatesList;
+    @BindView(R.id.loading)
+    View loading;
 
     @Inject
     GoogleApiClient googleApiClient;
     @Inject
     MainPresenter presenter;
+    @Inject
+    EstimatesAdapter estimatesAdapter;
 
     private GoogleMap map;
     private PlaceAutocompleteAdapter adapter;
     private Marker originMarker;
     private Marker destinationMarker;
     private Polyline lineBetweenMarkers;
+    private BottomSheetBehavior<RelativeLayout> bottomSheetBehavior;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -63,7 +84,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
-        adapter = new PlaceAutocompleteAdapter(this, googleApiClient, null, null);
+        adapter = new PlaceAutocompleteAdapter(this, googleApiClient, SEARCH_BOUNDS, null);
         autoCompleteOrigin.setAdapter(adapter);
         autoCompleteOrigin.setOnItemClickListener((adapterView, view, i, l) ->
                 presenter.selectOriginId(adapter.getItem(i).getPlaceId()));
@@ -72,14 +93,10 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         autoCompleteDestination.setOnItemClickListener((adapterView, view, i, l) ->
                 presenter.selectDestinationId(adapter.getItem(i).getPlaceId()));
 
-//        FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
-//        fab.setOnClickListener(new View.OnClickListener() {
-//            @Override
-//            public void onClick(View view) {
-//                Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
-//                        .setAction("Action", null).show();
-//            }
-//        });
+        bottomSheetBehavior = BottomSheetBehavior.from(estimatesBottomSheet);
+
+        estimatesList.setLayoutManager(new GridLayoutManager(this, 3));
+        estimatesList.setAdapter(estimatesAdapter);
 
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
                 .findFragmentById(R.id.map);
@@ -177,7 +194,19 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
 
     @Override
     public void showEstimates(List<Estimate> estimates) {
-        Toast.makeText(this, "Estimates: " + estimates.size(), Toast.LENGTH_SHORT).show();
+        bottomSheetBehavior.setState(BottomSheetBehavior.STATE_HIDDEN);
+        estimatesAdapter.addEstimates(estimates);
+        estimatesList.setVisibility(View.VISIBLE);
+        loading.setVisibility(View.GONE);
+        bottomSheetBehavior.setState(BottomSheetBehavior.STATE_EXPANDED);
+    }
+
+    @Override
+    public void showLoading() {
+        bottomSheetBehavior.setState(BottomSheetBehavior.STATE_HIDDEN);
+        loading.setVisibility(View.VISIBLE);
+        estimatesList.setVisibility(View.GONE);
+        bottomSheetBehavior.setState(BottomSheetBehavior.STATE_EXPANDED);
     }
 
     private void removeMarkerIfNeeded(Marker marker) {
@@ -209,13 +238,4 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                     20));
         }
     }
-
-//    private static Spanned formatPlaceDetails(Resources res, CharSequence name, String id,
-//                                              CharSequence address, CharSequence phoneNumber, Uri websiteUri) {
-//        Log.e(TAG, res.getString(R.string.place_details, name, id, address, phoneNumber,
-//                websiteUri));
-//        return Html.fromHtml(res.getString(R.string.place_details, name, id, address, phoneNumber,
-//                websiteUri));
-//
-//    }
 }

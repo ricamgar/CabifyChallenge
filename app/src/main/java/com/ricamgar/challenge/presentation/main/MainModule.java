@@ -10,6 +10,7 @@ import com.ricamgar.challenge.data.repository.EstimatesRemoteRepository;
 import com.ricamgar.challenge.data.repository.adapter.LocationAdapter;
 import com.ricamgar.challenge.domain.repository.EstimatesRepository;
 import com.squareup.moshi.Moshi;
+import com.squareup.picasso.Picasso;
 
 import javax.inject.Named;
 import javax.inject.Singleton;
@@ -68,5 +69,11 @@ public class MainModule {
     @Named(value = "ioThread")
     Scheduler provideIOScheduler() {
         return Schedulers.io();
+    }
+
+    @Singleton
+    @Provides
+    Picasso providePicasso() {
+        return Picasso.with(activity);
     }
 }

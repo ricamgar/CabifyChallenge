@@ -1,11 +1,11 @@
 package com.ricamgar.challenge.presentation.main.presenter;
 
-import com.google.android.gms.common.api.GoogleApiClient;
-import com.ricamgar.challenge.data.mapper.PlaceToStopMapper;
 import com.ricamgar.challenge.domain.model.Location;
 import com.ricamgar.challenge.domain.model.Stop;
 import com.ricamgar.challenge.domain.usecase.EstimateJourneyUseCase;
 import com.ricamgar.challenge.domain.usecase.ResolvePlaceUseCase;
+import com.ricamgar.challenge.utils.EstimatesMother;
+import com.ricamgar.challenge.utils.StopsMother;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -18,6 +18,8 @@ import rx.schedulers.Schedulers;
 
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
+import static org.mockito.Matchers.anyListOf;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -26,10 +28,8 @@ public class MainPresenterTest {
     private final Location ANY_LOCATION = new Location(1.0, 2.0);
     private final Stop ANY_STOP = new Stop(ANY_LOCATION, "any_name");
 
-    MainPresenter presenter;
+    private MainPresenter presenter;
 
-    @Mock
-    GoogleApiClient googleApiClient;
     @Mock
     EstimateJourneyUseCase estimateJourney;
     @Mock
@@ -41,10 +41,8 @@ public class MainPresenterTest {
     public void setUp() throws Exception {
         MockitoAnnotations.initMocks(this);
 
-        when(estimateJourney.bind()).thenReturn(Observable.empty());
-
-        presenter = new MainPresenter(googleApiClient, estimateJourney, resolvePlace,
-                new PlaceToStopMapper(), Schedulers.immediate(), Schedulers.immediate());
+        presenter = new MainPresenter(estimateJourney, resolvePlace, Schedulers.immediate(),
+                Schedulers.immediate());
         presenter.attachToView(view);
     }
 
@@ -58,11 +56,6 @@ public class MainPresenterTest {
         presenter.detachFromView();
 
         assertNull(presenter.view);
-    }
-
-    @Test
-    public void shouldBindWithEstimateJourneyOnInit() throws Exception {
-        verify(estimateJourney).bind();
     }
 
     @Test
@@ -81,5 +74,33 @@ public class MainPresenterTest {
         presenter.selectDestinationId("id");
 
         verify(view).addDestinationMarker(ANY_LOCATION);
+    }
+
+    @Test
+    public void shouldShowLoadingWhenBothOriginAndDestinationAreSelected() throws Exception {
+        when(resolvePlace.execute("id")).thenReturn(Single.just(ANY_STOP));
+
+        presenter.selectOriginId("id");
+
+        verify(view, never()).showLoading();
+
+        presenter.selectDestinationId("id");
+
+        verify(view).showLoading();
+    }
+
+    @Test
+    public void shouldEstimateJourneyWhenBothOriginAndDestinationAreSelected() throws Exception {
+        when(resolvePlace.execute("id")).thenReturn(Single.just(ANY_STOP));
+        when(estimateJourney.execute(StopsMother.ANY_STOPS_LIST))
+                .thenReturn(Observable.just(EstimatesMother.ANY_ESTIMATE_LIST));
+
+        presenter.selectOriginId("id");
+
+        verify(estimateJourney, never()).execute(anyListOf(Stop.class));
+
+        presenter.selectDestinationId("id");
+
+        verify(estimateJourney).execute(anyListOf(Stop.class));
     }
 }

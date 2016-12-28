@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:orientation="horizontal"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:padding="4dp">
+
+    <ImageView
+        android:id="@+id/estimate_icon"
+        android:layout_width="wrap_content"
+        android:layout_height="match_parent"
+        android:src="@drawable/vehicle_placeholder" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginLeft="4dp"
+        android:layout_marginStart="4dp"
+        android:orientation="vertical">
+
+        <TextView
+            android:id="@+id/estimate_type"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            tools:text="Vehicle" />
+
+        <TextView
+            android:id="@+id/estimate_price"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            tools:text="Price" />
+
+    </LinearLayout>
+
+</LinearLayout>

@@ -34,7 +34,9 @@ public class ResolvePlaceUseCase {
                 placeBuffer.release();
                 throw new IllegalArgumentException("Place id not found");
             }
-            return placeToStopMapper.map(placeBuffer.get(0));
+            Stop stop = placeToStopMapper.map(placeBuffer.get(0));
+            placeBuffer.release();
+            return stop;
         });
     }
 }
