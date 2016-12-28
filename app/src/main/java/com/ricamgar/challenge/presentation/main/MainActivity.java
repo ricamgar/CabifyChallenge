@@ -42,6 +42,8 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
 
     private static final String TAG = MainActivity.class.getSimpleName();
 
+    private static final String ORIGIN_ID = "ORIGIN_ID";
+    private static final String DESTINATION_ID = "DESTINATION_ID";
     private static final LatLngBounds SEARCH_BOUNDS =
             LatLngBounds.builder()
                     .include(new LatLng(40.471831, -3.748727))
@@ -70,6 +72,8 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     private PlaceAutocompleteAdapter adapter;
     private Marker originMarker;
     private Marker destinationMarker;
+    private String originId;
+    private String destinationId;
     private Polyline lineBetweenMarkers;
     private BottomSheetBehavior<RelativeLayout> bottomSheetBehavior;
 
@@ -86,12 +90,18 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
 
         adapter = new PlaceAutocompleteAdapter(this, googleApiClient, SEARCH_BOUNDS, null);
         autoCompleteOrigin.setAdapter(adapter);
-        autoCompleteOrigin.setOnItemClickListener((adapterView, view, i, l) ->
-                presenter.selectOriginId(adapter.getItem(i).getPlaceId()));
+        autoCompleteOrigin.setOnItemClickListener((adapterView, view, i, l) -> {
+            String originId = adapter.getItem(i).getPlaceId();
+            this.originId = originId;
+            presenter.selectOriginId(originId);
+        });
 
         autoCompleteDestination.setAdapter(adapter);
-        autoCompleteDestination.setOnItemClickListener((adapterView, view, i, l) ->
-                presenter.selectDestinationId(adapter.getItem(i).getPlaceId()));
+        autoCompleteDestination.setOnItemClickListener((adapterView, view, i, l) -> {
+            String destinationId = adapter.getItem(i).getPlaceId();
+            this.destinationId = destinationId;
+            presenter.selectDestinationId(destinationId);
+        });
 
         bottomSheetBehavior = BottomSheetBehavior.from(estimatesBottomSheet);
 
@@ -103,6 +113,24 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         mapFragment.getMapAsync(this);
 
         presenter.attachToView(this);
+
+        if (savedInstanceState != null) {
+            restoreState(savedInstanceState);
+        }
+    }
+
+    private void restoreState(Bundle savedInstanceState) {
+        originId = savedInstanceState.getString(ORIGIN_ID);
+        destinationId = savedInstanceState.getString(DESTINATION_ID);
+        presenter.selectOriginId(originId);
+        presenter.selectDestinationId(destinationId);
+    }
+
+    @Override
+    protected void onSaveInstanceState(Bundle outState) {
+        outState.putString(ORIGIN_ID, originId);
+        outState.putString(DESTINATION_ID, destinationId);
+        super.onSaveInstanceState(outState);
     }
 
     @Override
