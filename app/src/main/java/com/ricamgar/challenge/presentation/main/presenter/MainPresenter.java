@@ -1,10 +1,11 @@
 package com.ricamgar.challenge.presentation.main.presenter;
 
-
+import com.google.android.gms.maps.model.LatLng;
 import com.ricamgar.challenge.domain.model.Estimate;
 import com.ricamgar.challenge.domain.model.Location;
 import com.ricamgar.challenge.domain.model.Stop;
 import com.ricamgar.challenge.domain.usecase.EstimateJourneyUseCase;
+import com.ricamgar.challenge.domain.usecase.GetLocationUseCase;
 import com.ricamgar.challenge.domain.usecase.ResolvePlaceUseCase;
 
 import java.util.Arrays;
@@ -26,6 +27,7 @@ public class MainPresenter {
 
     private final EstimateJourneyUseCase estimateJourney;
     private final ResolvePlaceUseCase resolvePlace;
+    private final GetLocationUseCase getLocation;
     private final Scheduler mainThread;
     private final Scheduler ioThread;
 
@@ -33,10 +35,12 @@ public class MainPresenter {
 
     @Inject
     public MainPresenter(EstimateJourneyUseCase estimateJourney, ResolvePlaceUseCase resolvePlace,
+                         GetLocationUseCase getLocation,
                          @Named("mainThread") Scheduler mainThread,
                          @Named("ioThread") Scheduler ioThread) {
         this.estimateJourney = estimateJourney;
         this.resolvePlace = resolvePlace;
+        this.getLocation = getLocation;
         this.mainThread = mainThread;
         this.ioThread = ioThread;
     }
@@ -47,6 +51,7 @@ public class MainPresenter {
 
         subscribeToShowLoading(originDestinationStream);
         subscribeToShowEstimates(originDestinationStream);
+        subscribeToLocationUpdates();
     }
 
     public void detachFromView() {
@@ -107,6 +112,14 @@ public class MainPresenter {
                 .subscribe(stops -> view.showLoading()));
     }
 
+    private void subscribeToLocationUpdates() {
+        subscriptions.add(getLocation.execute()
+                .first()
+                .subscribe(
+                        latLng -> view.showLocation(latLng)
+                ));
+    }
+
     public interface MapView {
 
         void addOriginMarker(Location latLng);
@@ -118,5 +131,7 @@ public class MainPresenter {
         void showEstimates(List<Estimate> estimates);
 
         void showLoading();
+
+        void showLocation(LatLng latLng);
     }
 }

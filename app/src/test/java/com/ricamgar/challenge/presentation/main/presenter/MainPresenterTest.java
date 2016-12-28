@@ -1,8 +1,9 @@
 package com.ricamgar.challenge.presentation.main.presenter;
 
-import com.ricamgar.challenge.domain.model.Location;
+import com.google.android.gms.maps.model.LatLng;
 import com.ricamgar.challenge.domain.model.Stop;
 import com.ricamgar.challenge.domain.usecase.EstimateJourneyUseCase;
+import com.ricamgar.challenge.domain.usecase.GetLocationUseCase;
 import com.ricamgar.challenge.domain.usecase.ResolvePlaceUseCase;
 import com.ricamgar.challenge.utils.EstimatesMother;
 import com.ricamgar.challenge.utils.StopsMother;
@@ -20,13 +21,13 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.mockito.Matchers.anyListOf;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.only;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 public class MainPresenterTest {
 
-    private final Location ANY_LOCATION = new Location(1.0, 2.0);
-    private final Stop ANY_STOP = new Stop(ANY_LOCATION, "any_name");
+    private final LatLng ANY_LATLNG = new LatLng(1.0, 2.0);
 
     private MainPresenter presenter;
 
@@ -36,12 +37,16 @@ public class MainPresenterTest {
     ResolvePlaceUseCase resolvePlace;
     @Mock
     MainPresenter.MapView view;
+    @Mock
+    GetLocationUseCase getLocation;
 
     @Before
     public void setUp() throws Exception {
         MockitoAnnotations.initMocks(this);
 
-        presenter = new MainPresenter(estimateJourney, resolvePlace, Schedulers.immediate(),
+        when(getLocation.execute()).thenReturn(Observable.just(ANY_LATLNG));
+
+        presenter = new MainPresenter(estimateJourney, resolvePlace, getLocation, Schedulers.immediate(),
                 Schedulers.immediate());
         presenter.attachToView(view);
     }
@@ -60,25 +65,25 @@ public class MainPresenterTest {
 
     @Test
     public void shouldAddMarkerWhenOriginIsSelected() throws Exception {
-        when(resolvePlace.execute("id")).thenReturn(Single.just(ANY_STOP));
+        when(resolvePlace.execute("id")).thenReturn(Single.just(StopsMother.ANY_STOP));
 
         presenter.selectOriginId("id");
 
-        verify(view).addOriginMarker(ANY_LOCATION);
+        verify(view).addOriginMarker(StopsMother.ANY_STOP_LOCATION);
     }
 
     @Test
     public void shouldAddMarkerWhenDestinationIsSelected() throws Exception {
-        when(resolvePlace.execute("id")).thenReturn(Single.just(ANY_STOP));
+        when(resolvePlace.execute("id")).thenReturn(Single.just(StopsMother.ANY_STOP));
 
         presenter.selectDestinationId("id");
 
-        verify(view).addDestinationMarker(ANY_LOCATION);
+        verify(view).addDestinationMarker(StopsMother.ANY_STOP_LOCATION);
     }
 
     @Test
     public void shouldShowLoadingWhenBothOriginAndDestinationAreSelected() throws Exception {
-        when(resolvePlace.execute("id")).thenReturn(Single.just(ANY_STOP));
+        when(resolvePlace.execute("id")).thenReturn(Single.just(StopsMother.ANY_STOP));
 
         presenter.selectOriginId("id");
 
@@ -91,7 +96,7 @@ public class MainPresenterTest {
 
     @Test
     public void shouldEstimateJourneyWhenBothOriginAndDestinationAreSelected() throws Exception {
-        when(resolvePlace.execute("id")).thenReturn(Single.just(ANY_STOP));
+        when(resolvePlace.execute("id")).thenReturn(Single.just(StopsMother.ANY_STOP));
         when(estimateJourney.execute(StopsMother.ANY_STOPS_LIST))
                 .thenReturn(Observable.just(EstimatesMother.ANY_ESTIMATE_LIST));
 
@@ -102,5 +107,12 @@ public class MainPresenterTest {
         presenter.selectDestinationId("id");
 
         verify(estimateJourney).execute(anyListOf(Stop.class));
+    }
+
+    @Test
+    public void shouldShowLocationWhenLocationUpdateReceived() throws Exception {
+        when(getLocation.execute()).thenReturn(Observable.just(ANY_LATLNG));
+
+        verify(view, only()).showLocation(ANY_LATLNG);
     }
 }

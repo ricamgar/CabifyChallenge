@@ -4,6 +4,7 @@ package com.ricamgar.challenge.presentation.main;
 import android.app.Activity;
 
 import com.google.android.gms.common.api.GoogleApiClient;
+import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.location.places.Places;
 import com.ricamgar.challenge.data.api.CabifyApi;
 import com.ricamgar.challenge.data.repository.EstimatesRemoteRepository;
@@ -38,6 +39,7 @@ public class MainModule {
     GoogleApiClient provideGoogleApiClient() {
         return new GoogleApiClient.Builder(activity)
                 .addApi(Places.GEO_DATA_API)
+                .addApi(LocationServices.API)
                 .build();
     }
 

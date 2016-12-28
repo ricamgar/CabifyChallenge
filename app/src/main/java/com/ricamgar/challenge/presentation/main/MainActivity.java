@@ -42,6 +42,8 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
 
     private static final String TAG = MainActivity.class.getSimpleName();
 
+    private static final float CAMERA_ZOOM = 17.0f;
+    private static final int MAP_PADDING = 140;
     private static final String ORIGIN_ID = "ORIGIN_ID";
     private static final String DESTINATION_ID = "DESTINATION_ID";
     private static final LatLngBounds SEARCH_BOUNDS =
@@ -151,54 +153,11 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         super.onDestroy();
     }
 
-    @SuppressWarnings("MissingPermission")
     @Override
     public void onMapReady(GoogleMap googleMap) {
         map = googleMap;
-        map.setMyLocationEnabled(true);
-        // TODO: 21/12/16 Use the FusedLocationApi
-        map.setOnMyLocationChangeListener(location -> {
-            LatLng latLng = new LatLng(location.getLatitude(), location.getLongitude());
-            map.addMarker(new MarkerOptions().position(latLng));
-            map.moveCamera(CameraUpdateFactory.newLatLngZoom(latLng, 17.0f));
-        });
+        map.setPadding(0, MAP_PADDING, 0, MAP_PADDING);
     }
-
-//    @SuppressWarnings("MissingPermission")
-//    @Override
-//    public void onConnected(@Nullable Bundle bundle) {
-////        requestLocationUpdates();
-//    }
-
-//    @SuppressWarnings("MissingPermission")
-//    private void requestLocationUpdates() {
-//        LocationRequest locationRequest = new LocationRequest();
-//        locationRequest.setInterval(10000);
-//        locationRequest.setFastestInterval(5000);
-//        locationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
-//        LocationServices.FusedLocationApi.requestLocationUpdates(googleApiClient, locationRequest, this);
-//    }
-//
-//    @Override
-//    public void onConnectionSuspended(int i) {
-//        // TODO: 21/12/16
-//    }
-//
-//    @Override
-//    public void onConnectionFailed(@NonNull ConnectionResult connectionResult) {
-//        // TODO: 21/12/16
-//    }
-
-//    @Override
-//    public void onLocationChanged(Location location) {
-//        if (lastLocation == null) {
-//            lastLocation = location;
-//            LatLng latLng = new LatLng(lastLocation.getLatitude(), lastLocation.getLongitude());
-//            map.addMarker(new MarkerOptions().position(latLng));
-//            map.moveCamera(CameraUpdateFactory.newLatLngZoom(latLng, 17.0f));
-//            autoCompleteOrigin.setHint("My current location");
-//        }
-//    }
 
     @Override
     public void addOriginMarker(Location location) {
@@ -237,6 +196,12 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         bottomSheetBehavior.setState(BottomSheetBehavior.STATE_EXPANDED);
     }
 
+    @Override
+    public void showLocation(LatLng latLng) {
+        map.addMarker(new MarkerOptions().position(latLng));
+        map.moveCamera(CameraUpdateFactory.newLatLngZoom(latLng, CAMERA_ZOOM));
+    }
+
     private void removeMarkerIfNeeded(Marker marker) {
         if (marker != null) {
             marker.remove();
@@ -245,7 +210,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
 
     private Marker drawNewMarker(Location location) {
         LatLng latLng = new LatLng(location.latitude, location.longitude);
-        map.moveCamera(CameraUpdateFactory.newLatLngZoom(latLng, 17.0f));
+        map.moveCamera(CameraUpdateFactory.newLatLngZoom(latLng, CAMERA_ZOOM));
         return map.addMarker(new MarkerOptions().position(latLng));
     }
 
@@ -263,7 +228,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                     .build();
             map.animateCamera(CameraUpdateFactory.newLatLngBounds(
                     latLngBounds,
-                    20));
+                    MAP_PADDING));
         }
     }
 }
