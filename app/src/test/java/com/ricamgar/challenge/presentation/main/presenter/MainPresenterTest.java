@@ -36,7 +36,7 @@ public class MainPresenterTest {
     @Mock
     ResolvePlaceUseCase resolvePlace;
     @Mock
-    MainPresenter.MapView view;
+    MainPresenter.MainView view;
     @Mock
     GetLocationUseCase getLocation;
 

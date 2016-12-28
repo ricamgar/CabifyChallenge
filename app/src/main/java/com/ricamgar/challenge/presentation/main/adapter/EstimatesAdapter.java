@@ -25,7 +25,7 @@ public class EstimatesAdapter extends RecyclerView.Adapter<EstimatesAdapter.View
     private List<Estimate> estimates = new ArrayList<>();
 
     @Inject
-    public EstimatesAdapter(Picasso picasso) {
+    EstimatesAdapter(Picasso picasso) {
         this.picasso = picasso;
     }
 
@@ -56,7 +56,7 @@ public class EstimatesAdapter extends RecyclerView.Adapter<EstimatesAdapter.View
         return estimates.size();
     }
 
-    public class ViewHolder extends RecyclerView.ViewHolder {
+    class ViewHolder extends RecyclerView.ViewHolder {
 
         @BindView(R.id.estimate_icon)
         ImageView icon;
@@ -65,7 +65,7 @@ public class EstimatesAdapter extends RecyclerView.Adapter<EstimatesAdapter.View
         @BindView(R.id.estimate_price)
         TextView price;
 
-        public ViewHolder(View itemView) {
+        ViewHolder(View itemView) {
             super(itemView);
             ButterKnife.bind(this, itemView);
         }

@@ -1,12 +1,13 @@
 package com.ricamgar.challenge.presentation.main.presenter;
 
-import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.GoogleMap;
 import com.ricamgar.challenge.domain.model.Estimate;
 import com.ricamgar.challenge.domain.model.Location;
 import com.ricamgar.challenge.domain.model.Stop;
 import com.ricamgar.challenge.domain.usecase.EstimateJourneyUseCase;
 import com.ricamgar.challenge.domain.usecase.GetLocationUseCase;
 import com.ricamgar.challenge.domain.usecase.ResolvePlaceUseCase;
+import com.ricamgar.challenge.presentation.main.facade.MapFacade;
 
 import java.util.Arrays;
 import java.util.List;
@@ -28,24 +29,26 @@ public class MainPresenter {
     private final EstimateJourneyUseCase estimateJourney;
     private final ResolvePlaceUseCase resolvePlace;
     private final GetLocationUseCase getLocation;
+    private final MapFacade mapFacade;
     private final Scheduler mainThread;
     private final Scheduler ioThread;
 
-    MapView view;
+    MainView view;
 
     @Inject
     public MainPresenter(EstimateJourneyUseCase estimateJourney, ResolvePlaceUseCase resolvePlace,
-                         GetLocationUseCase getLocation,
+                         GetLocationUseCase getLocation, MapFacade mapFacade,
                          @Named("mainThread") Scheduler mainThread,
                          @Named("ioThread") Scheduler ioThread) {
         this.estimateJourney = estimateJourney;
         this.resolvePlace = resolvePlace;
         this.getLocation = getLocation;
+        this.mapFacade = mapFacade;
         this.mainThread = mainThread;
         this.ioThread = ioThread;
     }
 
-    public void attachToView(MapView view) {
+    public void attachToView(MainView view) {
         this.view = view;
         Observable<List<Stop>> originDestinationStream = createOriginAndDestinationStream();
 
@@ -59,13 +62,17 @@ public class MainPresenter {
         view = null;
     }
 
+    public void mapReady(GoogleMap googleMap) {
+        mapFacade.init(googleMap);
+    }
+
     public void selectOriginId(String placeId) {
         subscriptions.add(resolvePlace.execute(placeId)
                 .subscribeOn(ioThread)
                 .observeOn(mainThread)
                 .subscribe(
                         origin -> {
-                            view.addOriginMarker(origin.location);
+                            mapFacade.addOriginMarker(origin.location);
                             originStream.onNext(origin);
                         },
                         throwable -> view.showError(throwable.getMessage())
@@ -78,7 +85,7 @@ public class MainPresenter {
                 .observeOn(mainThread)
                 .subscribe(
                         destination -> {
-                            view.addDestinationMarker(destination.location);
+                            mapFacade.addDestinationMarker(destination.location);
                             destinationStream.onNext(destination);
                         },
                         throwable -> view.showError(throwable.getMessage())
@@ -115,23 +122,16 @@ public class MainPresenter {
     private void subscribeToLocationUpdates() {
         subscriptions.add(getLocation.execute()
                 .first()
-                .subscribe(
-                        latLng -> view.showLocation(latLng)
-                ));
+                .map(latLng -> new Location(latLng.latitude, latLng.longitude))
+                .subscribe(mapFacade::addOriginMarker));
     }
 
-    public interface MapView {
-
-        void addOriginMarker(Location latLng);
-
-        void addDestinationMarker(Location latLng);
-
-        void showError(String errorMessage);
+    public interface MainView {
 
         void showEstimates(List<Estimate> estimates);
 
         void showLoading();
 
-        void showLocation(LatLng latLng);
+        void showError(String errorMessage);
     }
 }

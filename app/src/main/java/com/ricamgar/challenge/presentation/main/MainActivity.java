@@ -13,19 +13,13 @@ import android.widget.RelativeLayout;
 import android.widget.Toast;
 
 import com.google.android.gms.common.api.GoogleApiClient;
-import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.LatLngBounds;
-import com.google.android.gms.maps.model.Marker;
-import com.google.android.gms.maps.model.MarkerOptions;
-import com.google.android.gms.maps.model.Polyline;
-import com.google.android.gms.maps.model.PolylineOptions;
 import com.ricamgar.challenge.R;
 import com.ricamgar.challenge.domain.model.Estimate;
-import com.ricamgar.challenge.domain.model.Location;
 import com.ricamgar.challenge.presentation.main.adapter.EstimatesAdapter;
 import com.ricamgar.challenge.presentation.main.adapter.PlaceAutocompleteAdapter;
 import com.ricamgar.challenge.presentation.main.presenter.MainPresenter;
@@ -38,19 +32,16 @@ import butterknife.BindView;
 import butterknife.ButterKnife;
 
 public class MainActivity extends AppCompatActivity implements OnMapReadyCallback,
-        MainPresenter.MapView {
+        MainPresenter.MainView {
 
     private static final String TAG = MainActivity.class.getSimpleName();
 
-    private static final float CAMERA_ZOOM = 17.0f;
-    private static final int MAP_PADDING = 140;
     private static final String ORIGIN_ID = "ORIGIN_ID";
     private static final String DESTINATION_ID = "DESTINATION_ID";
-    private static final LatLngBounds SEARCH_BOUNDS =
-            LatLngBounds.builder()
-                    .include(new LatLng(40.471831, -3.748727))
-                    .include(new LatLng(40.409516, -3.665643))
-                    .build();
+    private static final LatLngBounds SEARCH_BOUNDS = LatLngBounds.builder()
+            .include(new LatLng(40.471831, -3.748727))
+            .include(new LatLng(40.409516, -3.665643))
+            .build();
 
     @BindView(R.id.autocomplete_origin_places)
     AutoCompleteTextView autoCompleteOrigin;
@@ -70,13 +61,9 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     @Inject
     EstimatesAdapter estimatesAdapter;
 
-    private GoogleMap map;
     private PlaceAutocompleteAdapter adapter;
-    private Marker originMarker;
-    private Marker destinationMarker;
     private String originId;
     private String destinationId;
-    private Polyline lineBetweenMarkers;
     private BottomSheetBehavior<RelativeLayout> bottomSheetBehavior;
 
     @Override
@@ -155,22 +142,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
 
     @Override
     public void onMapReady(GoogleMap googleMap) {
-        map = googleMap;
-        map.setPadding(0, MAP_PADDING, 0, MAP_PADDING);
-    }
-
-    @Override
-    public void addOriginMarker(Location location) {
-        removeMarkerIfNeeded(originMarker);
-        originMarker = drawNewMarker(location);
-        drawLineBetweenMarkers();
-    }
-
-    @Override
-    public void addDestinationMarker(Location location) {
-        removeMarkerIfNeeded(destinationMarker);
-        destinationMarker = drawNewMarker(location);
-        drawLineBetweenMarkers();
+        presenter.mapReady(googleMap);
     }
 
     @Override
@@ -194,41 +166,5 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         loading.setVisibility(View.VISIBLE);
         estimatesList.setVisibility(View.GONE);
         bottomSheetBehavior.setState(BottomSheetBehavior.STATE_EXPANDED);
-    }
-
-    @Override
-    public void showLocation(LatLng latLng) {
-        map.addMarker(new MarkerOptions().position(latLng));
-        map.moveCamera(CameraUpdateFactory.newLatLngZoom(latLng, CAMERA_ZOOM));
-    }
-
-    private void removeMarkerIfNeeded(Marker marker) {
-        if (marker != null) {
-            marker.remove();
-        }
-    }
-
-    private Marker drawNewMarker(Location location) {
-        LatLng latLng = new LatLng(location.latitude, location.longitude);
-        map.moveCamera(CameraUpdateFactory.newLatLngZoom(latLng, CAMERA_ZOOM));
-        return map.addMarker(new MarkerOptions().position(latLng));
-    }
-
-    private void drawLineBetweenMarkers() {
-        if (originMarker != null && destinationMarker != null) {
-            PolylineOptions polylineOptions = new PolylineOptions();
-            polylineOptions.add(originMarker.getPosition(), destinationMarker.getPosition());
-            if (lineBetweenMarkers != null) {
-                lineBetweenMarkers.remove();
-            }
-            lineBetweenMarkers = map.addPolyline(polylineOptions);
-            LatLngBounds latLngBounds = LatLngBounds.builder()
-                    .include(originMarker.getPosition())
-                    .include(destinationMarker.getPosition())
-                    .build();
-            map.animateCamera(CameraUpdateFactory.newLatLngBounds(
-                    latLngBounds,
-                    MAP_PADDING));
-        }
     }
 }
