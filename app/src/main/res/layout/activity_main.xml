@@ -23,6 +23,9 @@
 
     <include layout="@layout/content_main" />
 
-    <include layout="@layout/main_estimates" />
+    <include
+        android:id="@+id/estimates_container"
+        android:visibility="gone"
+        layout="@layout/main_estimates" />
 
 </android.support.design.widget.CoordinatorLayout>

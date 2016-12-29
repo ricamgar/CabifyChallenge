@@ -10,7 +10,7 @@ import javax.inject.Inject;
 public class PlaceToStopMapper {
 
     @Inject
-    public PlaceToStopMapper() {
+    PlaceToStopMapper() {
         // needed for DI
     }
 

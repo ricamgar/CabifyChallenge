@@ -1,12 +1,18 @@
 package com.ricamgar.challenge.presentation.main.presenter;
 
+import android.Manifest;
+
 import com.google.android.gms.maps.model.LatLng;
+import com.ricamgar.challenge.R;
+import com.ricamgar.challenge.domain.model.Location;
 import com.ricamgar.challenge.domain.model.Stop;
 import com.ricamgar.challenge.domain.usecase.EstimateJourneyUseCase;
 import com.ricamgar.challenge.domain.usecase.GetLocationUseCase;
 import com.ricamgar.challenge.domain.usecase.ResolvePlaceUseCase;
+import com.ricamgar.challenge.presentation.main.facade.MapFacade;
 import com.ricamgar.challenge.utils.EstimatesMother;
 import com.ricamgar.challenge.utils.StopsMother;
+import com.tbruyelle.rxpermissions.RxPermissions;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -19,6 +25,7 @@ import rx.schedulers.Schedulers;
 
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
+import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyListOf;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.only;
@@ -39,25 +46,34 @@ public class MainPresenterTest {
     MainPresenter.MainView view;
     @Mock
     GetLocationUseCase getLocation;
+    @Mock
+    MapFacade mapFacade;
+    @Mock
+    RxPermissions rxPermissions;
 
     @Before
     public void setUp() throws Exception {
         MockitoAnnotations.initMocks(this);
 
+        when(rxPermissions.request(Manifest.permission.ACCESS_FINE_LOCATION))
+                .thenReturn(Observable.just(true));
         when(getLocation.execute()).thenReturn(Observable.just(ANY_LATLNG));
 
-        presenter = new MainPresenter(estimateJourney, resolvePlace, getLocation, Schedulers.immediate(),
-                Schedulers.immediate());
-        presenter.attachToView(view);
+        presenter = new MainPresenter(estimateJourney, resolvePlace, getLocation, mapFacade,
+                rxPermissions, Schedulers.immediate(), Schedulers.immediate());
     }
 
     @Test
     public void shouldInitializeViewOnAttachToView() throws Exception {
+        presenter.attachToView(view);
+
         assertNotNull(presenter.view);
     }
 
     @Test
     public void shouldSetViewToNullOnDetach() throws Exception {
+        presenter.attachToView(view);
+
         presenter.detachFromView();
 
         assertNull(presenter.view);
@@ -67,23 +83,27 @@ public class MainPresenterTest {
     public void shouldAddMarkerWhenOriginIsSelected() throws Exception {
         when(resolvePlace.execute("id")).thenReturn(Single.just(StopsMother.ANY_STOP));
 
+        presenter.attachToView(view);
         presenter.selectOriginId("id");
 
-        verify(view).addOriginMarker(StopsMother.ANY_STOP_LOCATION);
+        verify(mapFacade).addOriginMarker(StopsMother.ANY_STOP_LOCATION);
     }
 
     @Test
     public void shouldAddMarkerWhenDestinationIsSelected() throws Exception {
         when(resolvePlace.execute("id")).thenReturn(Single.just(StopsMother.ANY_STOP));
 
+        presenter.attachToView(view);
         presenter.selectDestinationId("id");
 
-        verify(view).addDestinationMarker(StopsMother.ANY_STOP_LOCATION);
+        verify(mapFacade).addDestinationMarker(StopsMother.ANY_STOP_LOCATION);
     }
 
     @Test
     public void shouldShowLoadingWhenBothOriginAndDestinationAreSelected() throws Exception {
         when(resolvePlace.execute("id")).thenReturn(Single.just(StopsMother.ANY_STOP));
+
+        presenter.attachToView(view);
 
         presenter.selectOriginId("id");
 
@@ -100,6 +120,8 @@ public class MainPresenterTest {
         when(estimateJourney.execute(StopsMother.ANY_STOPS_LIST))
                 .thenReturn(Observable.just(EstimatesMother.ANY_ESTIMATE_LIST));
 
+        presenter.attachToView(view);
+
         presenter.selectOriginId("id");
 
         verify(estimateJourney, never()).execute(anyListOf(Stop.class));
@@ -113,6 +135,20 @@ public class MainPresenterTest {
     public void shouldShowLocationWhenLocationUpdateReceived() throws Exception {
         when(getLocation.execute()).thenReturn(Observable.just(ANY_LATLNG));
 
-        verify(view, only()).showLocation(ANY_LATLNG);
+        presenter.attachToView(view);
+
+        verify(mapFacade, only()).addOriginMarker(any(Location.class));
+        verify(view, only()).setOriginName(R.string.current_position);
+    }
+
+    @Test
+    public void shouldShowErrorWhenLocationPermissionNotGranted() throws Exception {
+        when(rxPermissions.request(Manifest.permission.ACCESS_FINE_LOCATION))
+                .thenReturn(Observable.just(false));
+
+        presenter.attachToView(view);
+
+        verify(view, only()).showError(R.string.no_location_permission);
+
     }
 }

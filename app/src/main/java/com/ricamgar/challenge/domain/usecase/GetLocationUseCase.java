@@ -16,14 +16,13 @@ import rx.Emitter;
 import rx.Observable;
 import rx.subjects.BehaviorSubject;
 
-@SuppressWarnings("MissingPermission")
 public class GetLocationUseCase implements GoogleApiClient.ConnectionCallbacks {
 
     private BehaviorSubject<Boolean> googleApiClientConnectedStream = BehaviorSubject.create();
     private GoogleApiClient googleApiClient;
 
     @Inject
-    public GetLocationUseCase(GoogleApiClient googleApiClient) {
+    GetLocationUseCase(GoogleApiClient googleApiClient) {
         this.googleApiClient = googleApiClient;
         this.googleApiClient.registerConnectionCallbacks(this);
     }
@@ -41,6 +40,7 @@ public class GetLocationUseCase implements GoogleApiClient.ConnectionCallbacks {
                     latLngEmitter.setCancellation(() -> LocationServices.FusedLocationApi
                             .removeLocationUpdates(googleApiClient, locationListener));
 
+                    //noinspection MissingPermission
                     LocationServices.FusedLocationApi.requestLocationUpdates(googleApiClient,
                             createLocationRequest(), locationListener);
 

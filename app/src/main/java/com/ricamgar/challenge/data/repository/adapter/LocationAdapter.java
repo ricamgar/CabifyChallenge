@@ -4,6 +4,7 @@ import com.ricamgar.challenge.domain.model.Location;
 import com.squareup.moshi.FromJson;
 import com.squareup.moshi.ToJson;
 
+@SuppressWarnings("unused")
 public class LocationAdapter {
 
     @ToJson

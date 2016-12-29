@@ -12,6 +12,7 @@ import com.ricamgar.challenge.data.repository.adapter.LocationAdapter;
 import com.ricamgar.challenge.domain.repository.EstimatesRepository;
 import com.squareup.moshi.Moshi;
 import com.squareup.picasso.Picasso;
+import com.tbruyelle.rxpermissions.RxPermissions;
 
 import javax.inject.Named;
 import javax.inject.Singleton;
@@ -77,5 +78,11 @@ public class MainModule {
     @Provides
     Picasso providePicasso() {
         return Picasso.with(activity);
+    }
+
+    @Singleton
+    @Provides
+    RxPermissions provideRxPermissions() {
+        return new RxPermissions(activity);
     }
 }

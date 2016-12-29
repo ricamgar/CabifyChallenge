@@ -37,6 +37,7 @@ import com.google.android.gms.location.places.AutocompleteFilter;
 import com.google.android.gms.location.places.AutocompletePrediction;
 import com.google.android.gms.location.places.AutocompletePredictionBuffer;
 import com.google.android.gms.location.places.Places;
+import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.LatLngBounds;
 
 import java.util.ArrayList;
@@ -73,7 +74,10 @@ public class PlaceAutocompleteAdapter
     /**
      * The bounds used for Places Geo Data autocomplete API requests.
      */
-    private LatLngBounds mBounds;
+    private LatLngBounds mBounds = LatLngBounds.builder()
+            .include(new LatLng(40.471831, -3.748727))
+            .include(new LatLng(40.409516, -3.665643))
+            .build();
 
     /**
      * The autocomplete filter used to restrict queries to a specific set of place types.
@@ -85,12 +89,9 @@ public class PlaceAutocompleteAdapter
      *
      * @see android.widget.ArrayAdapter#ArrayAdapter(android.content.Context, int)
      */
-    public PlaceAutocompleteAdapter(Context context, GoogleApiClient googleApiClient,
-                                    LatLngBounds bounds, AutocompleteFilter filter) {
+    public PlaceAutocompleteAdapter(Context context, GoogleApiClient googleApiClient) {
         super(context, android.R.layout.simple_expandable_list_item_2, android.R.id.text1);
         mGoogleApiClient = googleApiClient;
-        mBounds = bounds;
-        mPlaceFilter = filter;
     }
 
     /**
